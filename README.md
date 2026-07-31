@@ -1,1 +1,1 @@
-# g-rs-frontend  kill
+# g-rs-frontend  kill frontend
