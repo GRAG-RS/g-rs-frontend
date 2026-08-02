@@ -1,0 +1,23 @@
+
+name: Trigger Platform CI
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  trigger:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Notify Platform CI
+        uses: peter-evans/repository-dispatch@v3
+        with:
+          token: ${{ secrets.CICD_DISPATCH_TOKEN }}
+          repository: your-org/platform-ci
+          event-type: application-updated
+          client-payload: |
+            {
+              "repository": "${{ github.event.repository.name }}"
+            }
