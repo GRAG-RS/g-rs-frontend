@@ -1,4 +1,3 @@
-
 name: Trigger Platform CI
 
 on:
@@ -15,9 +14,11 @@ jobs:
         uses: peter-evans/repository-dispatch@v3
         with:
           token: ${{ secrets.CICD_DISPATCH_TOKEN }}
-          repository: your-org/platform-ci
+          repository: GRAG-RS/Platform-CI
           event-type: application-updated
           client-payload: |
             {
-              "repository": "${{ github.event.repository.name }}"
+              "repository": "${{ github.event.repository.name }}",
+              "ref": "${{ github.ref }}",
+              "sha": "${{ github.sha }}"
             }
