@@ -1,3 +1,4 @@
+# GitHub Actions Workflow Trigger
 name: Trigger Platform CI
 
 on:
@@ -14,7 +15,7 @@ jobs:
         uses: peter-evans/repository-dispatch@v3
         with:
           token: ${{ secrets.CICD_DISPATCH_TOKEN }}
-          repository: GRAG-RS/Platform-CI
+          repository: GRAG-RS/g-rs-cicd-pipeline
           event-type: application-updated
           client-payload: |
             {
