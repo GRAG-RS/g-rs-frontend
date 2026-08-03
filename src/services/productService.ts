@@ -3,21 +3,45 @@ import { API_ENDPOINTS } from '../constants/api';
 import type { Product, CreateProductInput, UpdateProductInput } from '../types';
 import { logger } from '../utils/logger';
 
-let mockProducts: Product[] = [
-  { id: '201', name: 'Enterprise Cloud Suite', price: 299.99, quantity: 45, status: 'In Stock' },
-  { id: '202', name: 'Security Gateway License', price: 499.00, quantity: 12, status: 'In Stock' },
-  { id: '203', name: 'Data Pipeline Accelerator', price: 150.00, quantity: 0, status: 'Out of Stock' },
-  { id: '204', name: 'Kubernetes Cluster Manager', price: 899.50, quantity: 8, status: 'In Stock' },
+const FALLBACK_PRODUCTS: Product[] = [
+  {
+    id: '101',
+    name: 'Enterprise Cloud Gateway',
+    price: 4999.99,
+    quantity: 45,
+    status: 'In Stock',
+    category: 'Software',
+  },
+  {
+    id: '102',
+    name: 'ALB Traffic Controller',
+    price: 2999.00,
+    quantity: 18,
+    status: 'In Stock',
+    category: 'Infrastructure',
+  },
+  {
+    id: '103',
+    name: 'RDS PostgreSQL Sync Node',
+    price: 1499.50,
+    quantity: 0,
+    status: 'Out of Stock',
+    category: 'Database',
+  },
 ];
 
 export class ProductService {
   async getProducts(): Promise<Product[]> {
     try {
-      const response = await apiClient.get<Product[]>(API_ENDPOINTS.PRODUCTS.BASE);
-      return response.data;
+      const response = await apiClient.get<any>(API_ENDPOINTS.PRODUCTS.BASE);
+      const rawData = response.data?.data?.items || response.data?.data || response.data;
+      if (Array.isArray(rawData)) {
+        return rawData;
+      }
+      return FALLBACK_PRODUCTS;
     } catch (err) {
-      logger.warn('Product Service API unavailable, serving product records via fallback mock.', err);
-      return [...mockProducts];
+      logger.error('Failed to fetch products from API, returning fallback data:', err);
+      return FALLBACK_PRODUCTS;
     }
   }
 
@@ -26,8 +50,7 @@ export class ProductService {
       const response = await apiClient.get<Product>(API_ENDPOINTS.PRODUCTS.BY_ID(id));
       return response.data;
     } catch (err) {
-      const found = mockProducts.find((p) => p.id === id);
-      if (found) return found;
+      logger.error(`Failed to fetch product ${id} from API:`, err);
       throw err;
     }
   }
@@ -37,13 +60,8 @@ export class ProductService {
       const response = await apiClient.post<Product>(API_ENDPOINTS.PRODUCTS.BASE, input);
       return response.data;
     } catch (err) {
-      logger.warn('Product Service API unavailable, adding product to mock storage.', err);
-      const newProd: Product = {
-        ...input,
-        id: String(Date.now()),
-      };
-      mockProducts.push(newProd);
-      return newProd;
+      logger.error('Failed to create product via API:', err);
+      throw err;
     }
   }
 
@@ -52,12 +70,7 @@ export class ProductService {
       const response = await apiClient.put<Product>(API_ENDPOINTS.PRODUCTS.BY_ID(id), input);
       return response.data;
     } catch (err) {
-      logger.warn('Product Service API unavailable, updating product in mock storage.', err);
-      const index = mockProducts.findIndex((p) => p.id === id);
-      if (index !== -1) {
-        mockProducts[index] = { ...mockProducts[index], ...input };
-        return mockProducts[index];
-      }
+      logger.error(`Failed to update product ${id} via API:`, err);
       throw err;
     }
   }
@@ -66,8 +79,8 @@ export class ProductService {
     try {
       await apiClient.delete(API_ENDPOINTS.PRODUCTS.BY_ID(id));
     } catch (err) {
-      logger.warn('Product Service API unavailable, removing product from mock storage.', err);
-      mockProducts = mockProducts.filter((p) => p.id !== id);
+      logger.error(`Failed to delete product ${id} via API:`, err);
+      throw err;
     }
   }
 }

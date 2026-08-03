@@ -19,6 +19,8 @@ export default function Employees() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
+  const [fetchError, setFetchError] = useState<string | null>(null);
 
   const {
     register,
@@ -40,10 +42,13 @@ export default function Employees() {
   const fetchEmployees = async () => {
     try {
       setLoading(true);
+      setFetchError(null);
       const data = await employeeService.getEmployees();
       setEmployees(data || []);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to fetch employees:', error);
+      const msg = error?.response?.data?.message || error?.message || 'Failed to fetch employees from backend service.';
+      setFetchError(msg);
     } finally {
       setLoading(false);
     }
@@ -61,6 +66,7 @@ export default function Employees() {
 
   const handleAdd = () => {
     setEditingId(null);
+    setSaveError(null);
     reset({
       employee_code: `EMP-${Math.floor(100 + Math.random() * 900)}`,
       first_name: '',
@@ -78,6 +84,7 @@ export default function Employees() {
 
   const handleEdit = (employee: Employee) => {
     setEditingId(employee.id);
+    setSaveError(null);
     setValue('employee_code', employee.employee_code || '');
     setValue('first_name', employee.first_name || (employee.name ? employee.name.split(' ')[0] : ''));
     setValue('last_name', employee.last_name || (employee.name ? employee.name.split(' ').slice(1).join(' ') : ''));
@@ -96,8 +103,10 @@ export default function Employees() {
       try {
         await employeeService.deleteEmployee(id);
         setEmployees(employees.filter(emp => emp.id !== id));
-      } catch (error) {
+      } catch (error: any) {
         console.error('Failed to delete employee:', error);
+        const msg = error?.response?.data?.message || error?.message || 'Failed to delete employee.';
+        alert(`Delete failed: ${msg}`);
       }
     }
   };
@@ -105,6 +114,7 @@ export default function Employees() {
   const onSave = async (data: EmployeeFormData) => {
     try {
       setIsSaving(true);
+      setSaveError(null);
       if (editingId) {
         const updated = await employeeService.updateEmployee(editingId, data);
         setEmployees(employees.map(emp => emp.id === updated.id ? updated : emp));
@@ -113,8 +123,10 @@ export default function Employees() {
         setEmployees([...employees, created]);
       }
       setIsModalOpen(false);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to save employee:', error);
+      const msg = error?.response?.data?.message || error?.message || 'API request failed while saving employee.';
+      setSaveError(`Failed to save: ${msg}`);
     } finally {
       setIsSaving(false);
     }
@@ -142,6 +154,20 @@ export default function Employees() {
           </Button>
         </div>
       </div>
+
+      {fetchError && (
+        <div className="bg-rose-500/10 border border-rose-500/30 text-rose-700 px-4 py-3 rounded-xl text-xs font-semibold flex items-center justify-between">
+          <span>{fetchError}</span>
+          {(fetchError.toLowerCase().includes('authenticated') || fetchError.toLowerCase().includes('unauthorized') || fetchError.toLowerCase().includes('403')) && (
+            <a
+              href="/login"
+              className="ml-4 inline-flex items-center px-3 py-1 bg-rose-600 text-white rounded-lg font-bold text-xs hover:bg-rose-700 transition-colors shadow-xs"
+            >
+              Sign In to Portal
+            </a>
+          )}
+        </div>
+      )}
 
       {/* Toolbar / Search */}
       <div className="flex items-center justify-between gap-4">
@@ -263,6 +289,11 @@ export default function Employees() {
         title={editingId ? 'Edit Employee Record' : 'Create New Employee'}
       >
         <form onSubmit={handleSubmit(onSave)} className="space-y-4 max-h-[70vh] overflow-y-auto pr-1">
+          {saveError && (
+            <div className="bg-rose-500/10 border border-rose-500/30 text-rose-700 px-4 py-3 rounded-xl text-xs font-semibold">
+              {saveError}
+            </div>
+          )}
           <Input
             label="Employee Code"
             {...register('employee_code')}

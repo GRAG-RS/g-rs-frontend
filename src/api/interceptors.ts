@@ -14,7 +14,11 @@ export const setupInterceptors = (client: AxiosInstance) => {
     (config: InternalAxiosRequestConfig) => {
       const token = storage.get<string>(STORAGE_KEYS.TOKEN);
       if (token && config.headers) {
-        config.headers.Authorization = `Bearer ${token}`;
+        if (typeof config.headers.set === 'function') {
+          config.headers.set('Authorization', `Bearer ${token}`);
+        } else {
+          (config.headers as Record<string, string>)['Authorization'] = `Bearer ${token}`;
+        }
       }
       return config;
     },
@@ -28,14 +32,17 @@ export const setupInterceptors = (client: AxiosInstance) => {
     (response) => response,
     (error: AxiosError) => {
       if (error.response) {
-        const { status } = error.response;
-        if (status === 401 || status === 403) {
-          logger.warn(`Received ${status} response, initiating session cleanup.`);
+        const { status, config } = error.response;
+        const isLoginEndpoint = config?.url?.includes('/login');
+        if (status === 401 && !isLoginEndpoint) {
+          logger.warn(`Received 401 response, initiating session cleanup.`);
           storage.remove(STORAGE_KEYS.TOKEN);
           storage.remove(STORAGE_KEYS.USER);
           if (onUnauthorizedCallback) {
             onUnauthorizedCallback();
           }
+        } else if (status === 403) {
+          logger.warn(`Received 403 Forbidden response for ${config?.url}. Access denied.`);
         }
       } else if (error.request) {
         logger.error('Network Error - ALB target unavailable:', error.request);

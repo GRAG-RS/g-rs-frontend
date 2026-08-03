@@ -20,11 +20,63 @@ const normalizeEmployee = (emp: any): Employee => ({
   status: emp.status === 'ACTIVE' || emp.status === 'Active' ? 'Active' : 'Inactive',
 });
 
-let mockEmployees: Employee[] = [
-  { id: '101', employee_code: 'EMP-101', first_name: 'Sarah', last_name: 'Jenkins', name: 'Sarah Jenkins', email: 'sarah.j@company.com', phone: '+14155551001', department: 'Engineering', designation: 'Senior Software Engineer', salary: 120000, date_of_joining: '2024-01-15', status: 'Active' },
-  { id: '102', employee_code: 'EMP-102', first_name: 'Michael', last_name: 'Chen', name: 'Michael Chen', email: 'michael.c@company.com', phone: '+14155551002', department: 'Product Management', designation: 'Product Manager', salary: 115000, date_of_joining: '2024-02-01', status: 'Active' },
-  { id: '103', employee_code: 'EMP-103', first_name: 'Elena', last_name: 'Rostova', name: 'Elena Rostova', email: 'elena.r@company.com', phone: '+14155551003', department: 'DevOps', designation: 'DevOps Lead', salary: 130000, date_of_joining: '2023-11-10', status: 'Active' },
-  { id: '104', employee_code: 'EMP-104', first_name: 'David', last_name: 'Kim', name: 'David Kim', email: 'david.k@company.com', phone: '+14155551004', department: 'Quality Assurance', designation: 'QA Specialist', salary: 90000, date_of_joining: '2024-03-15', status: 'Inactive' },
+const FALLBACK_EMPLOYEES: Employee[] = [
+  {
+    id: '1',
+    employee_code: 'EMP-101',
+    name: 'Sarah Jenkins',
+    first_name: 'Sarah',
+    last_name: 'Jenkins',
+    email: 'sarah.j@company.com',
+    phone: '+1 415 555 2671',
+    department: 'Engineering',
+    designation: 'Senior Software Engineer',
+    salary: 125000,
+    date_of_joining: '2023-01-15',
+    status: 'Active',
+  },
+  {
+    id: '2',
+    employee_code: 'EMP-102',
+    name: 'Alex Rivera',
+    first_name: 'Alex',
+    last_name: 'Rivera',
+    email: 'alex.r@company.com',
+    phone: '+1 415 555 3892',
+    department: 'Product Management',
+    designation: 'Lead Product Manager',
+    salary: 135000,
+    date_of_joining: '2022-11-01',
+    status: 'Active',
+  },
+  {
+    id: '3',
+    employee_code: 'EMP-103',
+    name: 'Michael Chen',
+    first_name: 'Michael',
+    last_name: 'Chen',
+    email: 'm.chen@company.com',
+    phone: '+1 415 555 4910',
+    department: 'DevOps & Infra',
+    designation: 'Staff Cloud Architect',
+    salary: 145000,
+    date_of_joining: '2022-03-20',
+    status: 'Active',
+  },
+  {
+    id: '4',
+    employee_code: 'EMP-104',
+    name: 'Emily Wong',
+    first_name: 'Emily',
+    last_name: 'Wong',
+    email: 'emily.w@company.com',
+    phone: '+1 415 555 8821',
+    department: 'Quality Assurance',
+    designation: 'QA Lead',
+    salary: 110000,
+    date_of_joining: '2023-06-10',
+    status: 'Active',
+  },
 ];
 
 export class EmployeeService {
@@ -35,10 +87,10 @@ export class EmployeeService {
       if (Array.isArray(rawData)) {
         return rawData.map(normalizeEmployee);
       }
-      return [...mockEmployees];
+      return FALLBACK_EMPLOYEES;
     } catch (err) {
-      logger.warn('Employee Service API unavailable, serving fallback data.', err);
-      return [...mockEmployees];
+      logger.error('Failed to fetch employees from API, returning fallback data:', err);
+      return FALLBACK_EMPLOYEES;
     }
   }
 
@@ -48,8 +100,7 @@ export class EmployeeService {
       const item = response.data?.data || response.data;
       return normalizeEmployee(item);
     } catch (err) {
-      const found = mockEmployees.find((e) => e.id === id);
-      if (found) return found;
+      logger.error(`Failed to fetch employee ${id} from API:`, err);
       throw err;
     }
   }
@@ -66,13 +117,8 @@ export class EmployeeService {
       const createdItem = response.data?.data || response.data;
       return normalizeEmployee(createdItem);
     } catch (err) {
-      logger.warn('User Service API unavailable, saving newly created employee to fallback mock state.', err);
-      const newEmp: Employee = normalizeEmployee({
-        ...payload,
-        id: String(Date.now()),
-      });
-      mockEmployees.push(newEmp);
-      return newEmp;
+      logger.error('Failed to create employee via API:', err);
+      throw err;
     }
   }
 
@@ -88,12 +134,7 @@ export class EmployeeService {
       const updatedItem = response.data?.data || response.data;
       return normalizeEmployee(updatedItem);
     } catch (err) {
-      logger.warn('User Service API unavailable, updating mock storage.', err);
-      const index = mockEmployees.findIndex((e) => e.id === id);
-      if (index !== -1) {
-        mockEmployees[index] = normalizeEmployee({ ...mockEmployees[index], ...payload });
-        return mockEmployees[index];
-      }
+      logger.error(`Failed to update employee ${id} via API:`, err);
       throw err;
     }
   }
@@ -101,10 +142,9 @@ export class EmployeeService {
   async deleteEmployee(id: string): Promise<void> {
     try {
       await apiClient.delete(API_ENDPOINTS.EMPLOYEES.BY_ID(id));
-      mockEmployees = mockEmployees.filter((e) => e.id !== id);
     } catch (err) {
-      logger.warn('User Service API unavailable, deleting from mock storage.', err);
-      mockEmployees = mockEmployees.filter((e) => e.id !== id);
+      logger.error(`Failed to delete employee ${id} via API:`, err);
+      throw err;
     }
   }
 }
