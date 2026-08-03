@@ -1,0 +1,25 @@
+# GitHub Actions Workflow Trigger
+name: Trigger Platform CI
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  trigger:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Notify Platform CI
+        uses: peter-evans/repository-dispatch@v3
+        with:
+          token: ${{ secrets.CICD_DISPATCH_TOKEN }}
+          repository: GRAG-RS/g-rs-cicd-pipeline
+          event-type: application-updated
+          client-payload: |
+            {
+              "repository": "${{ github.event.repository.name }}",
+              "ref": "${{ github.ref }}",
+              "sha": "${{ github.sha }}"
+            }
