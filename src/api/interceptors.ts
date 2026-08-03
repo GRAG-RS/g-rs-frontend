@@ -34,18 +34,16 @@ export const setupInterceptors = (client: AxiosInstance) => {
       if (error.response) {
         const { status, config } = error.response;
         const isLoginEndpoint = config?.url?.includes('/login');
-        const currentToken = storage.get<string>(STORAGE_KEYS.TOKEN);
-        const isDemoToken = currentToken?.includes('eyJhbGci') || currentToken?.includes('enterprise-production-session');
 
-        if (status === 401 && !isLoginEndpoint && !isDemoToken) {
-          logger.warn(`Received 401 response, initiating session cleanup.`);
+        if (status === 401 && !isLoginEndpoint) {
+          logger.warn(`Received 401 response for ${config?.url}, initiating session cleanup.`);
           storage.remove(STORAGE_KEYS.TOKEN);
           storage.remove(STORAGE_KEYS.USER);
           if (onUnauthorizedCallback) {
             onUnauthorizedCallback();
           }
-        } else if (status === 403 || (status === 401 && isDemoToken)) {
-          logger.warn(`Received ${status} response for ${config?.url}. Preserving session state.`);
+        } else if (status === 403) {
+          logger.warn(`Received 403 Forbidden response for ${config?.url}. Access denied.`);
         }
       } else if (error.request) {
         logger.error('Network Error - ALB target unavailable:', error.request);
