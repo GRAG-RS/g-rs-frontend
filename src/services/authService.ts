@@ -1,9 +1,8 @@
 import { apiClient } from '../api';
 import { API_ENDPOINTS } from '../constants/api';
+import { DEMO_JWT_TOKEN } from '../constants/storage';
 import type { AuthResponse, User } from '../types';
 import { logger } from '../utils/logger';
-
-export const DEMO_JWT_TOKEN = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6InVzcl9wcm9kXzEwMSIsImVtYWlsIjoidXNlckBjb21wYW55LmNvbSIsInJvbGUiOiJBRE1JTiIsImV4cCI6MjUyNDYwODAwMH0.c2VjdXJlX2RlbW9fc2lnbmF0dXJlX2hhc2hfcHJvZHVjdGlvbg';
 
 export class AuthService {
   async login(email: string, password: string): Promise<AuthResponse> {
