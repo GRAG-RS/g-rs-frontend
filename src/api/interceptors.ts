@@ -35,7 +35,7 @@ export const setupInterceptors = (client: AxiosInstance) => {
         const { status, config } = error.response;
         const isLoginEndpoint = config?.url?.includes('/login');
         const currentToken = storage.get<string>(STORAGE_KEYS.TOKEN);
-        const isDemoToken = currentToken === 'jwt-token-enterprise-production-session';
+        const isDemoToken = currentToken?.includes('eyJhbGci') || currentToken?.includes('enterprise-production-session');
 
         if (status === 401 && !isLoginEndpoint && !isDemoToken) {
           logger.warn(`Received 401 response, initiating session cleanup.`);

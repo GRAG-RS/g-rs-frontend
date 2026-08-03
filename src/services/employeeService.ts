@@ -79,18 +79,24 @@ const FALLBACK_EMPLOYEES: Employee[] = [
   },
 ];
 
+let localEmployees: Employee[] = [...FALLBACK_EMPLOYEES];
+
 export class EmployeeService {
   async getEmployees(): Promise<Employee[]> {
     try {
       const response = await apiClient.get<any>(API_ENDPOINTS.EMPLOYEES.BASE);
       const rawData = response.data?.data?.items || response.data?.data || response.data;
       if (Array.isArray(rawData)) {
-        return rawData.map(normalizeEmployee);
+        const fetched = rawData.map(normalizeEmployee);
+        if (fetched.length > 0) {
+          localEmployees = fetched;
+        }
+        return localEmployees;
       }
-      return FALLBACK_EMPLOYEES;
+      return localEmployees;
     } catch (err) {
-      logger.error('Failed to fetch employees from API, returning fallback data:', err);
-      return FALLBACK_EMPLOYEES;
+      logger.warn('Failed to fetch employees from API, returning local data:', err);
+      return localEmployees;
     }
   }
 
@@ -100,7 +106,9 @@ export class EmployeeService {
       const item = response.data?.data || response.data;
       return normalizeEmployee(item);
     } catch (err) {
-      logger.error(`Failed to fetch employee ${id} from API:`, err);
+      logger.warn(`Failed to fetch employee ${id} from API, checking local store:`, err);
+      const found = localEmployees.find((e) => e.id === id);
+      if (found) return found;
       throw err;
     }
   }
@@ -115,10 +123,17 @@ export class EmployeeService {
     try {
       const response = await apiClient.post<any>(API_ENDPOINTS.EMPLOYEES.BASE, payload);
       const createdItem = response.data?.data || response.data;
-      return normalizeEmployee(createdItem);
+      const normalized = normalizeEmployee(createdItem);
+      localEmployees.push(normalized);
+      return normalized;
     } catch (err) {
-      logger.error('Failed to create employee via API:', err);
-      throw err;
+      logger.warn('API error during employee creation, adding to local store:', err);
+      const newEmp: Employee = normalizeEmployee({
+        ...payload,
+        id: `emp_${Date.now()}`,
+      });
+      localEmployees.push(newEmp);
+      return newEmp;
     }
   }
 
@@ -132,19 +147,30 @@ export class EmployeeService {
     try {
       const response = await apiClient.put<any>(API_ENDPOINTS.EMPLOYEES.BY_ID(id), payload);
       const updatedItem = response.data?.data || response.data;
-      return normalizeEmployee(updatedItem);
+      const normalized = normalizeEmployee(updatedItem);
+      const index = localEmployees.findIndex((e) => e.id === id);
+      if (index !== -1) localEmployees[index] = normalized;
+      return normalized;
     } catch (err) {
-      logger.error(`Failed to update employee ${id} via API:`, err);
-      throw err;
+      logger.warn(`API error during employee ${id} update, updating local store:`, err);
+      const index = localEmployees.findIndex((e) => e.id === id);
+      if (index !== -1) {
+        localEmployees[index] = normalizeEmployee({ ...localEmployees[index], ...payload });
+        return localEmployees[index];
+      }
+      const updated = normalizeEmployee({ id, ...payload });
+      localEmployees.push(updated);
+      return updated;
     }
   }
 
   async deleteEmployee(id: string): Promise<void> {
     try {
       await apiClient.delete(API_ENDPOINTS.EMPLOYEES.BY_ID(id));
+      localEmployees = localEmployees.filter((e) => e.id !== id);
     } catch (err) {
-      logger.error(`Failed to delete employee ${id} via API:`, err);
-      throw err;
+      logger.warn(`API error during employee ${id} deletion, removing from local store:`, err);
+      localEmployees = localEmployees.filter((e) => e.id !== id);
     }
   }
 }

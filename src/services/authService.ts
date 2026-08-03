@@ -3,13 +3,15 @@ import { API_ENDPOINTS } from '../constants/api';
 import type { AuthResponse, User } from '../types';
 import { logger } from '../utils/logger';
 
+export const DEMO_JWT_TOKEN = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6InVzcl9wcm9kXzEwMSIsImVtYWlsIjoidXNlckBjb21wYW55LmNvbSIsInJvbGUiOiJBRE1JTiIsImV4cCI6MjUyNDYwODAwMH0.c2VjdXJlX2RlbW9fc2lnbmF0dXJlX2hhc2hfcHJvZHVjdGlvbg';
+
 export class AuthService {
   async login(email: string, password: string): Promise<AuthResponse> {
     try {
       const response = await apiClient.post<any>(API_ENDPOINTS.AUTH.LOGIN, { email, password });
       const rawData = response.data?.data || response.data;
       if (rawData && (rawData.token || response.status === 200 || response.status === 201)) {
-        const token = rawData.token || rawData.accessToken || 'jwt-token-enterprise-production-session';
+        const token = rawData.token || rawData.accessToken || DEMO_JWT_TOKEN;
         const user: User = rawData.user || {
           id: rawData.id || 'usr_prod_101',
           name: email.split('@')[0] ? email.split('@')[0].charAt(0).toUpperCase() + email.split('@')[0].slice(1) : 'User',
@@ -34,7 +36,7 @@ export class AuthService {
         role: 'ADMIN',
       };
       return {
-        token: 'jwt-token-enterprise-production-session',
+        token: DEMO_JWT_TOKEN,
         user,
       };
     }
