@@ -31,11 +31,15 @@ export default function Login() {
       const response = await authService.login(data.email, data.password);
       login(response.token, response.user);
       navigate(ROUTES.DASHBOARD);
-    } catch (err) {
+    } catch {
       setServerError('Authentication failed. Please verify your credentials.');
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleForgotPassword = () => {
+    setServerError('Password reset link is handled by IT support administrator.');
   };
 
   return (
@@ -114,9 +118,13 @@ export default function Login() {
                 />
                 <span className="ml-2">Remember session</span>
               </label>
-              <a href="#" className="font-semibold text-blue-400 hover:text-blue-300 transition-colors">
+              <button
+                type="button"
+                onClick={handleForgotPassword}
+                className="font-semibold text-blue-400 hover:text-blue-300 transition-colors focus:outline-none"
+              >
                 Forgot password?
-              </a>
+              </button>
             </div>
 
             <div className="pt-2">

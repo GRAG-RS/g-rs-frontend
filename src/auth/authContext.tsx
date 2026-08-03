@@ -1,17 +1,11 @@
-import React, { createContext, useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import type { User } from '../types/User';
 import type { AuthState } from '../types/Auth';
 import { tokenStorage } from './tokenStorage';
 import { setUnauthorizedCallback } from '../api/interceptors';
 import { isTokenExpired } from '../utils/jwt';
+import { AuthContext } from './authContextDefinition';
 
-interface AuthContextType extends AuthState {
-  login: (token: string, user: User) => void;
-  logout: () => void;
-  updateUser: (user: Partial<User>) => void;
-}
-
-export const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [state, setState] = useState<AuthState>({

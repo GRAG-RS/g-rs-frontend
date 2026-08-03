@@ -15,10 +15,16 @@ export const loginSchema = z.object({
 export type LoginFormData = z.infer<typeof loginSchema>;
 
 export const employeeSchema = z.object({
-  name: z.string().min(1, 'Full name is required'),
+  employee_code: z.string().min(3, 'Employee code must be at least 3 characters (e.g. EMP-101)'),
+  first_name: z.string().min(1, 'First name is required'),
+  last_name: z.string().min(1, 'Last name is required'),
   email: z.string().min(1, 'Email is required').regex(VALIDATION_RULES.EMAIL_REGEX, 'Invalid email address format'),
+  phone: z.string().min(7, 'Phone number must be at least 7 digits'),
   department: z.string().min(1, 'Department is required'),
-  status: z.enum(['Active', 'Inactive']),
+  designation: z.string().min(1, 'Designation / job title is required'),
+  salary: z.number().positive('Salary must be greater than 0'),
+  date_of_joining: z.string().min(1, 'Date of joining is required'),
+  status: z.enum(['Active', 'Inactive', 'ACTIVE', 'INACTIVE']),
 });
 
 export type EmployeeFormData = z.infer<typeof employeeSchema>;

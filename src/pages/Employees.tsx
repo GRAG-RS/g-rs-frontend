@@ -62,9 +62,15 @@ export default function Employees() {
   const handleAdd = () => {
     setEditingId(null);
     reset({
-      name: '',
+      employee_code: `EMP-${Math.floor(100 + Math.random() * 900)}`,
+      first_name: '',
+      last_name: '',
       email: '',
-      department: '',
+      phone: '+14155550000',
+      department: 'Engineering',
+      designation: 'Software Engineer',
+      salary: 100000,
+      date_of_joining: new Date().toISOString().split('T')[0],
       status: 'Active',
     });
     setIsModalOpen(true);
@@ -72,10 +78,16 @@ export default function Employees() {
 
   const handleEdit = (employee: Employee) => {
     setEditingId(employee.id);
-    setValue('name', employee.name);
+    setValue('employee_code', employee.employee_code || '');
+    setValue('first_name', employee.first_name || (employee.name ? employee.name.split(' ')[0] : ''));
+    setValue('last_name', employee.last_name || (employee.name ? employee.name.split(' ').slice(1).join(' ') : ''));
     setValue('email', employee.email);
+    setValue('phone', employee.phone || '');
     setValue('department', employee.department);
-    setValue('status', employee.status);
+    setValue('designation', employee.designation || '');
+    setValue('salary', employee.salary || 0);
+    setValue('date_of_joining', employee.date_of_joining || '');
+    setValue('status', employee.status === 'ACTIVE' || employee.status === 'Active' ? 'Active' : 'Inactive');
     setIsModalOpen(true);
   };
 
@@ -118,10 +130,10 @@ export default function Employees() {
               Employee Directory
             </h2>
             <span className="inline-flex items-center rounded-full bg-blue-50 px-2.5 py-0.5 text-xs font-bold text-blue-700 border border-blue-200/60">
-              User Service (/api/users)
+              Employee Service (/api/v1/employees)
             </span>
           </div>
-          <p className="mt-1 text-xs text-slate-500 font-medium">Manage workforce records connected via the Application Load Balancer.</p>
+          <p className="mt-1 text-xs text-slate-500 font-medium">Manage workforce records connected via the Application Load Balancer to RDS PostgreSQL.</p>
         </div>
         <div className="mt-4 sm:mt-0">
           <Button onClick={handleAdd} size="md" className="shadow-md shadow-blue-500/20">
@@ -157,10 +169,10 @@ export default function Employees() {
         <Table>
           <Thead>
             <Tr>
-              <Th>Employee ID</Th>
+              <Th>Code</Th>
               <Th>Name & Profile</Th>
               <Th>Email</Th>
-              <Th>Department</Th>
+              <Th>Department & Designation</Th>
               <Th>Status</Th>
               <Th className="text-right">Actions</Th>
             </Tr>
@@ -169,16 +181,18 @@ export default function Employees() {
             {filteredEmployees.length > 0 ? (
               filteredEmployees.map((employee) => (
                 <Tr key={employee.id}>
-                  <Td className="font-mono text-xs text-slate-400 font-semibold">
-                    #{employee.id}
+                  <Td className="font-mono text-xs text-slate-500 font-bold">
+                    {employee.employee_code || `#${employee.id.slice(0, 8)}`}
                   </Td>
                   <Td>
                     <div className="flex items-center space-x-3">
                       <div className="h-9 w-9 rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-500 flex items-center justify-center text-white font-bold text-xs shadow-xs">
-                        {employee.name.charAt(0)}
+                        {(employee.first_name || employee.name || 'E').charAt(0)}
                       </div>
                       <div>
-                        <span className="font-bold text-slate-900 block">{employee.name}</span>
+                        <span className="font-bold text-slate-900 block">
+                          {employee.first_name && employee.last_name ? `${employee.first_name} ${employee.last_name}` : employee.name}
+                        </span>
                       </div>
                     </div>
                   </Td>
@@ -189,19 +203,26 @@ export default function Employees() {
                     </div>
                   </Td>
                   <Td>
-                    <span className="inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-semibold bg-slate-100 text-slate-700 border border-slate-200">
-                      <Building className="h-3 w-3 mr-1 text-slate-400" />
-                      {employee.department}
-                    </span>
+                    <div className="space-y-0.5">
+                      <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold bg-slate-100 text-slate-700 border border-slate-200">
+                        <Building className="h-3 w-3 mr-1 text-slate-400" />
+                        {employee.department}
+                      </span>
+                      {employee.designation && (
+                        <span className="block text-xs text-slate-500 font-medium pl-1">
+                          {employee.designation}
+                        </span>
+                      )}
+                    </div>
                   </Td>
                   <Td>
                     <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-bold ${
-                      employee.status === 'Active' 
+                      employee.status === 'Active' || employee.status === 'ACTIVE'
                         ? 'bg-emerald-50 text-emerald-700 border border-emerald-200/60' 
                         : 'bg-slate-100 text-slate-600 border border-slate-200'
                     }`}>
-                      <span className={`h-1.5 w-1.5 rounded-full mr-1.5 ${employee.status === 'Active' ? 'bg-emerald-500' : 'bg-slate-400'}`}></span>
-                      {employee.status}
+                      <span className={`h-1.5 w-1.5 rounded-full mr-1.5 ${employee.status === 'Active' || employee.status === 'ACTIVE' ? 'bg-emerald-500' : 'bg-slate-400'}`}></span>
+                      {employee.status === 'ACTIVE' ? 'Active' : employee.status === 'INACTIVE' ? 'Inactive' : employee.status}
                     </span>
                   </Td>
                   <Td className="text-right">
@@ -241,26 +262,71 @@ export default function Employees() {
         onClose={() => setIsModalOpen(false)}
         title={editingId ? 'Edit Employee Record' : 'Create New Employee'}
       >
-        <form onSubmit={handleSubmit(onSave)} className="space-y-4">
+        <form onSubmit={handleSubmit(onSave)} className="space-y-4 max-h-[70vh] overflow-y-auto pr-1">
           <Input
-            label="Full Name"
-            {...register('name')}
-            error={errors.name?.message}
-            placeholder="e.g. Sarah Jenkins"
+            label="Employee Code"
+            {...register('employee_code')}
+            error={errors.employee_code?.message}
+            placeholder="EMP-1001"
           />
-          <Input
-            label="Corporate Email"
-            type="email"
-            {...register('email')}
-            error={errors.email?.message}
-            placeholder="sarah.j@company.com"
-          />
-          <Input
-            label="Department"
-            {...register('department')}
-            error={errors.department?.message}
-            placeholder="e.g. Engineering"
-          />
+          <div className="grid grid-cols-2 gap-4">
+            <Input
+              label="First Name"
+              {...register('first_name')}
+              error={errors.first_name?.message}
+              placeholder="e.g. Sarah"
+            />
+            <Input
+              label="Last Name"
+              {...register('last_name')}
+              error={errors.last_name?.message}
+              placeholder="e.g. Jenkins"
+            />
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <Input
+              label="Corporate Email"
+              type="email"
+              {...register('email')}
+              error={errors.email?.message}
+              placeholder="sarah.j@company.com"
+            />
+            <Input
+              label="Phone Number"
+              {...register('phone')}
+              error={errors.phone?.message}
+              placeholder="+14155552671"
+            />
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <Input
+              label="Department"
+              {...register('department')}
+              error={errors.department?.message}
+              placeholder="Engineering"
+            />
+            <Input
+              label="Designation"
+              {...register('designation')}
+              error={errors.designation?.message}
+              placeholder="Senior Software Engineer"
+            />
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <Input
+              label="Salary ($)"
+              type="number"
+              {...register('salary', { valueAsNumber: true })}
+              error={errors.salary?.message}
+              placeholder="120000"
+            />
+            <Input
+              label="Date of Joining"
+              type="date"
+              {...register('date_of_joining')}
+              error={errors.date_of_joining?.message}
+            />
+          </div>
           
           <div>
             <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Employment Status</label>
@@ -281,7 +347,7 @@ export default function Employees() {
               Cancel
             </Button>
             <Button type="submit" isLoading={isSaving}>
-              Save to User Service
+              Save to Employee Service
             </Button>
           </div>
         </form>

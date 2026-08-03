@@ -6,8 +6,8 @@ export const API_ENDPOINTS = {
     ME: '/api/users/me',
   },
   EMPLOYEES: {
-    BASE: '/api/users',
-    BY_ID: (id: string) => `/api/users/${id}`,
+    BASE: '/api/v1/employees',
+    BY_ID: (id: string) => `/api/v1/employees/${id}`,
   },
   PRODUCTS: {
     BASE: '/api/products',
