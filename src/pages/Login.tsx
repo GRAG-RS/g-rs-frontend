@@ -31,8 +31,9 @@ export default function Login() {
       const response = await authService.login(data.email, data.password);
       login(response.token, response.user);
       navigate(ROUTES.DASHBOARD);
-    } catch {
-      setServerError('Authentication failed. Please verify your credentials.');
+    } catch (error: any) {
+      const message = error?.message || 'Authentication failed. Please verify your credentials.';
+      setServerError(message);
     } finally {
       setLoading(false);
     }
